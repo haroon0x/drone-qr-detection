@@ -1,10 +1,19 @@
+import collections
+import sys
+
+# Monkey patch for Python 3.10+ to handle MutableMapping
+if not hasattr(collections, 'MutableMapping'):
+    import collections.abc
+    collections.MutableMapping = collections.abc.MutableMapping
+
 from dronekit import connect, VehicleMode
 import cv2
 import numpy as np
 
 
 # Connect to the vehicle
-connection_string = 'COM3'
+connection_string = 'tcp:127.0.0.1:5760'
+#connection_string = 'COM3'
 baud_rate = 112500     
 
 print(f"Connecting to vehicle on: {connection_string}...")
