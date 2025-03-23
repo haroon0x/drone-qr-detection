@@ -1,2 +1,63 @@
-venv
-nothing
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*.so
+*.o
+*.obj
+
+# Virtual Environment
+venv/
+env/
+*.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Log and Debug Files
+*.log
+*.out
+*.err
+
+# Config and Secrets
+config.json
+config.yaml
+*.ini
+*.conf
+*.csv
+*.db
+secrets.json
+secrets.yaml
+
+# Python Package and Dependency Files
+*.egg-info/
+dist/
+build/
+*.tar.gz
+
+# DroneKit & MAVProxy SITL Logs
+*.tlog
+*.rlog
+*.ulog
+logs/
+*.mavlink
+*.bin
+
+# Drone Simulation Files
+*.sim
+*.dat
+*.state
+*.px4log
+
+# VSCode & JetBrains IDEs
+.vscode/
+.idea/
+*.iml
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Temporary & Swap Files
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
