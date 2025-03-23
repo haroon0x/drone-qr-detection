@@ -1,0 +1,11 @@
+[project]
+name = "qr-detect"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dronekit>=2.9.2",
+    "dronekit-sitl>=3.3.0",
+    "opencv-python>=4.11.0.86",
+]
