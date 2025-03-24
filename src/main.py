@@ -2,14 +2,13 @@ import collections
 if not hasattr(collections, 'MutableMapping'):
     import collections.abc
     collections.MutableMapping = collections.abc.MutableMapping
-
 from dronekit import connect , VehicleMode , LocationGlobalRelative
 import time ,socket ,argparse , sys , threading 
 import cv2
 from drone_control import *
 from qr_detector import *
 
-        
+
 def main():
     vehicle = connect_copter()
     print("Connected to vehicle!")
@@ -22,7 +21,7 @@ def main():
     print(f" Battery: {vehicle.battery}")
     print(f" Mode: {vehicle.mode.name}")
 
-    
+    """
     def on_qr_detected(data):
         print(f"QR data: {data}")
         if data:
@@ -34,14 +33,19 @@ def main():
     stop_scanning = threading.Event()
     qr_thread = threading.Thread(target=search_for_qr_thread , args=(stop_scanning , on_qr_detected))
     qr_thread.daemon = True  # Thread will exit when main program exits
+    """
     
     try:
         print("About to takeoff")
         vehicle.mode=VehicleMode("GUIDED")
 
-        if arm_and_takeoff(vehicle, 5):
+        if arm_and_takeoff(vehicle, 6):
             print("Takeoff succesfull.")
-            
+            time.sleep(1)
+            vehicle.mode = VehicleMode("LAND")
+            time.sleep(2)
+
+            """
             # Define Waypoint
             target_lat = 47.397742
             target_lon = 8.5455993
@@ -65,7 +69,7 @@ def main():
 
         else:
             print("Takeoff failed!")
-    
+        """
     except KeyboardInterrupt:
         exit()
     except Exception as e:
@@ -74,6 +78,8 @@ def main():
 
     finally:
         print("Mission complete, cleaning up...")
+        
+        """
         stop_scanning.set()  # Signal the thread to stop
 
         print(f" GPS: {vehicle.gps_0}")
@@ -82,14 +88,14 @@ def main():
 
         if qr_thread.is_alive():
             qr_thread.join(timeout=3)  # Wait for thread to finish (with timeout)
-
+        """
         if vehicle.mode.name != "LAND" and vehicle.armed:
             print("Initiating Land")
             vehicle.mode = VehicleMode("LAND")
             time.sleep(2)
         
         vehicle.close()
-        print("Vehicle disconnected. \nScript Ended")
+        print("Vehicle d    isconnected. \nScript Ended")
 
 
 if __name__ == "__main__":
