@@ -11,7 +11,6 @@ def connect_to_drone():
             master = mavutil.mavlink_connection(COM_PORT, baud=BAUD_RATE)
             master.wait_heartbeat()
             print(f'✅ Drone connected. Heartbeat from system {master.target_system}, component {master.target_component}')
-            master.
             return master
 
         except Exception as e:
