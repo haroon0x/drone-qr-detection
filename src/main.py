@@ -1,96 +1,88 @@
-import collections
-if not hasattr(collections, 'MutableMapping'):
-    import collections.abc
-    collections.MutableMapping = collections.abc.MutableMapping
-
-from dronekit import connect , VehicleMode , LocationGlobalRelative
+from pymavlink import mavutil
+import numpy as np
 import time ,socket ,argparse , sys , threading 
-import cv2
 from drone_control import *
 from qr_detector import *
+from config import *
 
-        
+
 def main():
-    vehicle = connect_copter()
-    print("Connected to vehicle!")
+    flag=0
+    cap = cv2.VideoCapture(VIDEO_SOURCE)
 
-    # saving the home location.
-    home_location = vehicle.location.global_relative_frame
-    
-    print(f"Home Locataion : Lat - {home_location.lat} , Lon - {home_location.lon}")
-    print(f" GPS: {vehicle.gps_0}")
-    print(f" Battery: {vehicle.battery}")
-    print(f" Mode: {vehicle.mode.name}")
 
-    
-    def on_qr_detected(data):
-        print(f"QR data: {data}")
-        if data:
-            print("QR Code Detected - Landing on precise qr location!....")
-            qr_detected.set()
-            vehicle.mode = VehicleMode("LAND")
+    if not cap.isOpened():
+        print('❌ ⚠ Warning: Unable to open video stream. Retrying in 5 seconds...')
+        time.sleep(2)
+        cap = cv2.VideoCapture(VIDEO_SOURCE)  # Try reopening
+        if not cap.isOpened():
+            print('❌ Error: Video stream unavailable. Running without video.')
 
-    qr_detected = threading.Event()
-    stop_scanning = threading.Event()
-    qr_thread = threading.Thread(target=search_for_qr_thread , args=(stop_scanning , on_qr_detected))
-    qr_thread.daemon = True  # Thread will exit when main program exits
-    
-    try:
-        print("About to takeoff")
-        vehicle.mode=VehicleMode("GUIDED")
 
-        if arm_and_takeoff(vehicle, 5):
-            print("Takeoff succesfull.")
-            
-            # Define Waypoint
-            target_lat = 47.397742
-            target_lon = 8.5455993
+    qr_detector = cv2.QRCodeDetector()
+    drone = connect_to_drone()
+    print("flag is: ", flag)
 
-            print("Flying to waypoint...")
-            qr_thread.start()
-            reached_wapoint = go_to(vehicle, target_lat, target_lon)
 
-            if reached_wapoint:
-                print("waypoint Reached , Scanning For Qr code...")
-                qr_detected.wait(timeout=60) # Wait up to 60 seconds for QR detection
+
+    if not drone:
+        print('❌ Error: Unable to connect to drone after multiple attempts.')
+        return
+    else:
+        flag=1
+        
+
+    while flag:
+        ret, frame = cap.read()
+        if not ret:
+            print('❌ Failed to read frame')
+            continue
+
+        data, bbox, _ = qr_detector.detectAndDecode(frame)
+
+        if bbox is not None and len(bbox) > 0:
+            bbox = bbox.astype(int)
+            for i in range(len(bbox)):
+                pt1 = tuple(bbox[i][0])
+                pt2 = tuple(bbox[(i + 1) % len(bbox)][0])
+                cv2.line(frame, pt1, pt2, (0, 255, 0), 2)
+
+            if data:
+                print(f'✅ QR Code detected: {data}')
+                cv2.putText(frame, f"QR: {data}", (bbox[0][0][0], bbox[0][0][1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+                land_at_coordinates(drone)
+                print('⏳ Waiting for 5 seconds after landing...')
+                time.sleep(5)
+
+                print('🔄 Rotating servo forward and back...')
+                set_servo(drone, SERVO_CHANNEL, SERVO_PWM_FORWARD)
+                time.sleep(2)
+                set_servo(drone, SERVO_CHANNEL, SERVO_PWM_CLOSE)
+                time.sleep(2)
+                set_servo(drone, SERVO_CHANNEL, SERVO_PWM_STOP)
+                time.sleep(5)
+
+                set_guided_mode(drone)
+                arm_drone(drone)
+                takeoff_drone(drone, altitude=3)
+                land_at_coordinates(drone)
                 
-                if not qr_detected.is_set():
-                    print("No QR code detected within timeout, proceeding  to launch.")
-                    vehicle.mode = VehicleMode("LAND")
-            
-            else:
-                print("Failed to reach waypoint, returning to home")
-                go_to(vehicle, home_location.lat, home_location.lon)
-                vehicle.mode = VehicleMode("LAND")
+                flag=0
 
-        else:
-            print("Takeoff failed!")
-    
-    except KeyboardInterrupt:
-        exit()
-    except Exception as e:
-        print(f"Error: {e}")
-        
+        cv2.imshow('QR Code Detection', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    finally:
-        print("Mission complete, cleaning up...")
-        stop_scanning.set()  # Signal the thread to stop
+    cap.release()
+    cv2.destroyAllWindows()
 
-        print(f" GPS: {vehicle.gps_0}")
-        print(f" Battery: {vehicle.battery}")
-        print(f" Mode: {vehicle.mode.name}")
-
-        if qr_thread.is_alive():
-            qr_thread.join(timeout=3)  # Wait for thread to finish (with timeout)
-
-        if vehicle.mode.name != "LAND" and vehicle.armed:
-            print("Initiating Land")
-            vehicle.mode = VehicleMode("LAND")
-            time.sleep(2)
-        
-        vehicle.close()
-        print("Vehicle disconnected. \nScript Ended")
+    if drone:
+        drone.close()
+        print("flag is: ", flag)
+        print('🔌 Drone connection closed.')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

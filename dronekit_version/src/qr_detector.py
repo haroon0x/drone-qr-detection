@@ -5,7 +5,6 @@ import time
 
 def detect_qr(frame , qr_detector):
     """
-
     Detect and decode a QR code from the provided frame.
     Parameters:
         frame (numpy.ndarray): The input image in BGR format.
@@ -16,7 +15,7 @@ def detect_qr(frame , qr_detector):
         bbox (numpy.ndarray): The quadrangle (bounding box) of the detected QR code.
         straight_qr_img (numpy.ndarray): A rectified image of the QR code(Frontal view).
 
-        """
+    """
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     data, bbox, straight_qr_img = qr_detector.detectAndDecode(gray_frame)
 
@@ -51,11 +50,10 @@ def search_for_qr_thread(stop_event, callback = None):
         data , bbox , _ = detect_qr(frame , qr_detector)
 
         if bbox is not None and len(bbox) > 0:
+            # Convert bbox to appropriate integer points
             bbox = bbox.astype(int)
-            for i in range(len(bbox)):
-                pt1 = tuple(bbox[i][0])
-                pt2 = tuple(bbox[(i + 1) % len(bbox)][0])
-                cv2.line(frame, pt1, pt2, (0, 255, 0), 2)
+            # Draw bounding box lines around the QR code
+            cv2.polylines(frame, [bbox], True, (0, 255, 0), 2)
             if data:
                 print(f"Qr Data : {data}")
                 cv2.putText(frame, f"QR Code: {data}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
