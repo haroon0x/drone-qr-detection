@@ -9,21 +9,17 @@ from config import *
 def main():
     flag=0
     cap = cv2.VideoCapture(VIDEO_SOURCE)
-
-
+    
     if not cap.isOpened():
         print('❌ ⚠ Warning: Unable to open video stream. Retrying in 5 seconds...')
         time.sleep(2)
-        cap = cv2.VideoCapture(VIDEO_SOURCE)  # Try reopening
+        cap = cv2.VideoCapture(VIDEO_SOURCE) 
         if not cap.isOpened():
             print('❌ Error: Video stream unavailable. Running without video.')
-
 
     qr_detector = cv2.QRCodeDetector()
     drone = connect_to_drone()
     print("flag is: ", flag)
-
-
 
     if not drone:
         print('❌ Error: Unable to connect to drone after multiple attempts.')
@@ -31,15 +27,15 @@ def main():
     else:
         flag=1
         
-
     while flag:
         ret, frame = cap.read()
         if not ret:
             print('❌ Failed to read frame')
             continue
-
-        data, bbox, _ = qr_detector.detectAndDecode(frame)
-
+        
+        detect_qr(frame , qr_detector)
+        data, bbox, _ = detect_qr(frame , qr_detector)
+    
         if bbox is not None and len(bbox) > 0:
             bbox = bbox.astype(int)
             for i in range(len(bbox)):
@@ -49,26 +45,19 @@ def main():
 
             if data:
                 print(f'✅ QR Code detected: {data}')
-                cv2.putText(frame, f"QR: {data}", (bbox[0][0][0], bbox[0][0][1] - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv2.putText(frame, f"QR: {data}", (bbox[0][0][0], bbox[0][0][1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
                 land_at_coordinates(drone)
-                print('⏳ Waiting for 5 seconds after landing...')
-                time.sleep(5)
+                print('⏳ Waiting for 2 seconds after landing...')
+                time.sleep(2)
 
                 print('🔄 Rotating servo forward and back...')
-                set_servo(drone, SERVO_CHANNEL, SERVO_PWM_FORWARD)
-                time.sleep(2)
-                set_servo(drone, SERVO_CHANNEL, SERVO_PWM_CLOSE)
-                time.sleep(2)
-                set_servo(drone, SERVO_CHANNEL, SERVO_PWM_STOP)
-                time.sleep(5)
-
+                perform_servo_actions(drone)
                 set_guided_mode(drone)
                 arm_drone(drone)
                 takeoff_drone(drone, altitude=3)
+                go_to(drone , LATITUDE , LONGITUDE , ALTITUDE)
                 land_at_coordinates(drone)
-                
                 flag=0
 
         cv2.imshow('QR Code Detection', frame)

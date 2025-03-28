@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 import threading
 import time 
+from drone_control import *
 
 def detect_qr(frame , qr_detector):
     """
-
     Detect and decode a QR code from the provided frame.
     Parameters:
         frame (numpy.ndarray): The input image in BGR format.
@@ -17,6 +17,7 @@ def detect_qr(frame , qr_detector):
         straight_qr_img (numpy.ndarray): A rectified image of the QR code(Frontal view).
 
         """
+    
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     data, bbox, straight_qr_img = qr_detector.detectAndDecode(gray_frame)
 
@@ -27,17 +28,20 @@ def detect_qr(frame , qr_detector):
 
     return data, bbox , straight_qr_img
 
-def search_for_qr_thread(stop_event, callback = None):
+def search_for_qr_thread(stop_event, callback =  land_at_coordinates , ):
     """ Thread which searches for qr.
 
     Parameters:
         stop_event (threading.Event): Event to signal when to stop
-        callback (function,optional): Function to call when QR code is detected
+        callback (Landing function): Function to call when QR code is detected
     """
     cap = cv2.VideoCapture(0) 
     if not cap.isOpened():
-        print("Error: Could not open video capture.")
-        return
+        print('❌ ⚠ Warning: Unable to open video stream. Retrying in 5 seconds...')
+        time.sleep(2)
+        cap = cv2.VideoCapture(VIDEO_SOURCE) 
+        if not cap.isOpened():
+            print('❌ Error: Video stream unavailable. Running without video.')
     
     qr_detector = cv2.QRCodeDetector()
     
@@ -62,6 +66,7 @@ def search_for_qr_thread(stop_event, callback = None):
         
                 if callback and callable(callback):
                     callback(data)
+                # the callback fn should be the landing function.
 
 
         cv2.imshow("QR Code Detection", frame)

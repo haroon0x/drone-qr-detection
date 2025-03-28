@@ -109,6 +109,14 @@ def set_guided_mode(master):
     )
     print('✅ Mode set to GUIDED.')
 
+def perform_servo_actions(master):
+    set_servo(master, SERVO_CHANNEL, SERVO_PWM_FORWARD)
+    time.sleep(2)
+    set_servo(master, SERVO_CHANNEL, SERVO_PWM_CLOSE)
+    time.sleep(2)
+    set_servo(master, SERVO_CHANNEL, SERVO_PWM_STOP)
+    time.sleep(5)
+
 def set_servo(master, channel, pwm_value):
     print(f'🔧 Moving servo on channel {channel} to {pwm_value} PWM')
     master.mav.command_long_send(
